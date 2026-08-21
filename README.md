@@ -34,14 +34,7 @@ kubectl apply -f service-file/app-service.yaml
 kubectl get pods -n node-app -w
 ```
 
-Verify end-to-end:
 
-```bash
-kubectl -n node-app port-forward svc/backend 8080:80 &
-curl localhost:8080/
-curl localhost:8080/health
-curl localhost:8080/ready
-curl localhost:8080/count  
 ```
 ## 3. CI/CD pipeline
 
