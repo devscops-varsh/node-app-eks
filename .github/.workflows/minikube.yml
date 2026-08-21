@@ -1,0 +1,100 @@
+name: minikube selfhosted runner
+
+on:
+  push:
+    branches:
+    - main
+
+concurrency:
+  group: minikube-deploy
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: devscops-varsh/backend-app
+
+jobs:
+  docker-build:
+    runs-on: self-minikube
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to the Container registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=sha
+          type=raw,value=dev
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./app
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    needs: docker-build
+    runs-on: self-minikube
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Verify cluster is reachable
+      run: kubectl cluster-info
+
+    - name: Detect changed manifest files
+      id: changed
+      run: |
+        
+        CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'minikube/app/service-files/*.yml' 'minikube/app/service-files/*.yaml')
+        echo "Changed manifest files:"
+        echo "$CHANGED"
+        {
+          echo "files<<EOF"
+          echo "$CHANGED"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Apply only the changed manifests
+      if: steps.changed.outputs.files != ''
+      run: |
+        echo "${{ steps.changed.outputs.files }}" | while IFS= read -r file; do
+          if [ -n "$file" ]; then
+            echo "Applying: $file"
+            kubectl apply -f "$file" -n node-app
+          fi
+        done
+
+    - name: No manifest changes — skip apply
+      if: steps.changed.outputs.files == ''
+      run: echo "No .yml/.yaml manifest changes in this push — skipping kubectl apply, deployments untouched."
+
+    - name: Roll out new image
+      run: |
+        kubectl set image deployment/backend-app \
+          backend-app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev \
+          -n node-app
+
+    - name: Wait for rollout to complete
+      run: kubectl rollout status deployment/backend-app -n node-app --timeout=120s
