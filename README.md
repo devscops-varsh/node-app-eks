@@ -94,7 +94,7 @@ which is exactly why liveness here checks the process only, not the DB
 dependency, so a Redis blip can't cascade into a full pod restart storm.
 
 
-# 1. Symptom: what state are we in?
+**# 1. Symptom: what state are we in?
 kubectl get pods -n node-app
 #   -> STATUS: Running, but READY: 0/1, RESTARTS: 0
 #      zero restarts is the key signal — this immediately rules out
@@ -117,9 +117,9 @@ kubectl logs <pod> -n node-app
 # 4. Compare the probe path in the manifest against the actual route in code
 grep -A3 readinessProbe service-file/app-deployment.yaml
 grep "app.get" server.js
-#   -> manifest points readinessProbe at the wrong path (e.g. "/ready"),
-#      but the app only exposes "/readyz" — root cause: a one-character
-#      mismatch between the deployment manifest and the actual route
+#   -> manifest points readinessProbe at the wrong path (e.g. "/readyz"),
+#      but the app only exposes "/ready" — root cause: a one-character
+#      mismatch between the deployment manifest and the actual route**
 
 # 5. Fix: correct the path and reapply
 kubectl apply -f service-file/app-deployment.yaml
@@ -128,7 +128,7 @@ kubectl get pods -n node-app
 #   -> READY: 1/1, confirms the fix worked
 
 # 6. Verify recovery
-curl <minikube-service-url>/readyz
+curl <minikube-service-url>/ready
 #   -> {"status":"ready"}
 
 ---
