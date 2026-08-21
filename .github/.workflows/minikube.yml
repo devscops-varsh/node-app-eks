@@ -1,5 +1,4 @@
 name: minikube selfhosted runner
-
 on:
   push:
     branches:
