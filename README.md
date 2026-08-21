@@ -45,7 +45,7 @@ curl localhost:8080/count
 ```
 ## 3. CI/CD pipeline
 
-`.github/workflows/ci-cd.yml`:
+`.github/workflows/minikube.yml`:
 1. Builds the Docker image on every push to `main`.
 2. Pushes it to GHCR (`ghcr.io/<repo>/node-app-backend`).
 3. Applies manifests and does `kubectl set image` + `kubectl rollout status`
