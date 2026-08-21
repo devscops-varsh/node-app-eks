@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: node-app
+data:
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  PORT: "3000"
