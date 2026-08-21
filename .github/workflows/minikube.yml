@@ -45,7 +45,7 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
-        context: ./app
+        context: ./minikube/app
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
@@ -62,32 +62,9 @@ jobs:
     - name: Verify cluster is reachable
       run: kubectl cluster-info
 
-    - name: Detect changed manifest files
-      id: changed
+    - name: Apply Kubernetes manifests
       run: |
-        
-        CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'minikube/app/service-files/*.yml' 'minikube/app/service-files/*.yaml')
-        echo "Changed manifest files:"
-        echo "$CHANGED"
-        {
-          echo "files<<EOF"
-          echo "$CHANGED"
-          echo "EOF"
-        } >> "$GITHUB_OUTPUT"
-
-    - name: Apply only the changed manifests
-      if: steps.changed.outputs.files != ''
-      run: |
-        echo "${{ steps.changed.outputs.files }}" | while IFS= read -r file; do
-          if [ -n "$file" ]; then
-            echo "Applying: $file"
-            kubectl apply -f "$file" -n node-app
-          fi
-        done
-
-    - name: No manifest changes — skip apply
-      if: steps.changed.outputs.files == ''
-      run: echo "No .yml/.yaml manifest changes in this push — skipping kubectl apply, deployments untouched."
+        kubectl apply -f minikube/app/service-files/app-deployment.yml -n node-app
 
     - name: Roll out new image
       run: |
