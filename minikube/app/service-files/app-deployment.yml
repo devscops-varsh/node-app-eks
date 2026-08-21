@@ -23,7 +23,7 @@ spec:
       containers:
         - name: backend-app
           # Overwritten by CI/CD to a specific tag (see workflow) — ':dev' for local kind builds.
-          image: backend-app:dev
+          image: ghcr.io/devscops-varsh/backend-app:dev
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
@@ -39,14 +39,14 @@ spec:
               memory: "128Mi"
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: /ready
               port: 3000
             initialDelaySeconds: 3
             periodSeconds: 5
             failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: /healthz
+              path: /health
               port: 3000
             initialDelaySeconds: 5
             periodSeconds: 10
