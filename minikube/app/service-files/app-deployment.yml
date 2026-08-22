@@ -40,14 +40,14 @@ spec:
               memory: "128Mi"
           readinessProbe:
             httpGet:
-              path: /ready
+              path: /readyz
               port: 3000
             initialDelaySeconds: 3
             periodSeconds: 5
             failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: /health
+              path: /healthz
               port: 3000
             initialDelaySeconds: 5
             periodSeconds: 10
